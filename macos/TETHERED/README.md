@@ -13,7 +13,7 @@ by @dora2_yuruyi
 - Put the device in DFU mode. Get fake SHSH using idevicerestore.
 ```
 ./fakeshsh.sh
-./idevicerestore -t iPhone5,2_fake.ipsw
+./idevicerestore -t fake.ipsw
 ```
 ## 3, Restore CFW
 ### 3-1, Put the device in DFU mode.
