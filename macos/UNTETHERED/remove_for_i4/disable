@@ -19,18 +19,16 @@ fi
 
 rm pwnedibss iBSS.n90ap.RELEASE.dfu iBSS.n90ap.RELEASE.dec
 
-git clone https://github.com/axi0mX/ipwndfu
-cd ipwndfu
-./ipwndfu -p
+./../pwnedDFU -p
 sleep 3s
-./ipwndfu -f ../pwnedibss.img3
+./../pwnedDFU -f pwnedibss.img3
 sleep 5s
 echo "Running command"
-./ipwnrecovery -c 'setenv boot-partition 0'
+./irecovery -c 'setenv boot-partition 0'
 sleep 1s
-./ipwnrecovery -c 'saveenv'
+./irecovery -c 'saveenv'
 sleep 1s
-./ipwnrecovery -c 'reset'
+./irecovery -c 'reset'
 sleep 1s
 
 echo "Done"
