@@ -24,11 +24,11 @@ sleep 3s
 ./../pwnedDFU -f pwnedibss.img3
 sleep 5s
 echo "Running command"
-./irecovery -c 'setenv boot-partition 0'
+./../irecovery -c 'setenv boot-partition 0'
 sleep 1s
-./irecovery -c 'saveenv'
+./../irecovery -c 'saveenv'
 sleep 1s
-./irecovery -c 'reset'
+./../irecovery -c 'reset'
 sleep 1s
 
 echo "Done"
