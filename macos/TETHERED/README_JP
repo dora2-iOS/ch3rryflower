@@ -1,0 +1,99 @@
+ch3rryflower - v1.3b4 by @dora2_yuruyi
+
+*この手法は従来のTethered Downgradeの手法をそのまま適用したものです。*
+
+1, CFWの作成
+./cherry <orininal-ipsw> custom.ipsw -bbupdate -memory -tethered
+
+2, fake SHSHの取得
+./fakeshsh.sh [device]
+デバイスをDFU modeに。idevicerestoreを使用してfake SHSH を取得
+./idevicerestore -t [fakeipsw]
+
+3, 復元
+3-1, デバイスをpwned DFU modeに
+*pwnediBSSの抽出
+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+unzip -j custom.ipsw Firmware/dfu/iBSS*
+bin/xpwntool iBSS* softdfu
+rm iBSS*
+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+*デバイスをpwned DFU modeに
+./pwnedDFU -p
+以下のようになれば成功
+-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
+*** based on checkm8 exploit by axi0mX
+**  pwned dfu based on belladonna by synackuk
+**  improved by dora2_yururi
+Grooming heap
+preparing for overwrite
+overwriting task struct
+uploading payload
+executing payload
+device is now in pwned DFU mode
+-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
+
+*デバイスをiBSS(soft)DFU modeに昇格
+./pwnedDFU -f softdfu
+
+3-2, 復元作業
+*以下のコマンド実行前にshshディレクトリ内のfake SHSHの名前を以下のように変更
+shsh/[ECID]-iPhone5,2-[ios-version]-[build].shsh
+
+例) mv -v shsh/123456789-iPhone5,2-8.4.1.shsh shsh/123456789-iPhone5,2-9.0-13A344.shsh
+
+./idevicererestore -r custom.ipsw
+
+復元成功するとリカバリーモードに。
+
+4, justboot
+4-1, 準備
+ipsw(originalが好ましい)からiBSS, iBEC, DeviceTree, RestoreRamdisk, KernelCacheを抽出
+
+The iPhone WikiからFW keyを取得、iBSS, iBECを以下のようにdecryptし、パッチする。この作業は一度行えば2回目以降に同OSをブートする際は省略可能。
+The iPhone Wiki: https://www.theiphonewiki.com/wiki/Firmware_Keys
+
+*iBSS
+bin/xpwntool iBSS_original iBSS_decrypt -iv [iv] -k [key]
+bin/iBoot32patcher iBSS_decrypt pwnediBSS --rsa
+-> "pwnediBSS"が対象ファイル。
+
+*iBEC
+bin/xpwntool iBEC_original iBEC_decrypt -iv [iv] -k [key]
+bin/iBoot32patcher iBEC_decrypt iBEC_pwned --rsa -b "-v"
+bin/xpwntool iBEC_pwned pwnediBEC -t iBEC_original
+-> "pwnediBEC"が対象ファイル。
+
+pwnediBSS/pwnediBEC/DeviceTree/RestoreRamdisk/KernelCacheを保存しておくことで、次回以降4-2から作業可能。
+
+4-2, boot
+tetheredなので、この作業は毎度必要です。
+**以下、[]内は4-1で準備したファイルを表す。
+*デバイスをpwned DFU modeに
+./pwnedDFU -p
+以下のようになれば成功
+-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
+*** based on checkm8 exploit by axi0mX
+**  pwned dfu based on belladonna by synackuk
+**  improved by dora2_yururi
+Grooming heap
+preparing for overwrite
+overwriting task struct
+uploading payload
+executing payload
+device is now in pwned DFU mode
+-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
+
+*デバイスをiBSS(soft)DFU modeに
+./pwnedDFU -f [pwnediBSS]
+
+*デバイスをiBEC (recovery) modeに
+./irecovery -f [pwnediBEC]
+
+*Boot
+./irecovery -f [DeviceTree]
+./irecovery -c devicetree
+./irecovery -f [RestoreRamdisk]
+./irecovery -c ramdisk
+./irecovery -f [KernelCache]
+./irecovery -c bootx

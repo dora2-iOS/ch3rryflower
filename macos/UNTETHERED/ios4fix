@@ -1,0 +1,58 @@
+#!/bin/bash
+
+if [ $# != 4 ]; then
+echo "./ios4fix <iOS 4 ipsw [custom]> -t <iOS 4 ipsw [orig]> <iOS 7.1.2 ipsw>"
+exit
+fi
+
+if [ $2 != "-t" ]; then
+echo "bad args"
+exit
+fi
+
+echo "Put in device to dfu mode."
+read -p "<enter>: "
+
+zip -d $1 Firmware/all_flash/all_flash.n90ap.production/manifest
+
+cd src/n90ap/Firmware/all_flash/all_flash.n90ap.production
+
+unzip -j ../../../../../$3 Firmware/all_flash/all_flash*/applelogo*
+mv -v applelogo-640x960.s5l8930x.img3 applelogo4-640x960.s5l8930x.img3
+if [ ! -e "applelogo4-640x960.s5l8930x.img3" ]; then
+echo "failed get applelogo!"
+exit
+fi
+
+echo "0000010: 34" | xxd -r - applelogo4-640x960.s5l8930x.img3
+echo "0000020: 34" | xxd -r - applelogo4-640x960.s5l8930x.img3
+
+#make scab
+echo "Please connect the target device to USB."
+read -p "<enter>: "
+echo "getting shsh..."
+ECID="$((../../../../../idevicerestore -t ../../../../../$4) | sed -n -e 's/^.*Found ECID //p')"
+if [ -e "shsh/"$ECID"-iPhone3,1-7.1.2.shsh" ]; then
+zcat< shsh/"$ECID"-iPhone3,1-7.1.2.shsh > shsh/"$ECID"-iPhone3,1-7.1.2.plist
+plutil -extract 'APTicket' xml1 shsh/"$ECID"-iPhone3,1-7.1.2.plist -o 'shsh/apticket.plist'
+cat shsh/apticket.plist | sed -ne '/<data>/,/<\/data>/p' | sed -e "s/<data>//" | sed  "s/<\/data>//" | awk '{printf "%s",$0}' | base64 --decode > shsh/apticket.der
+../../../../../bin/xpwntool shsh/apticket.der applelogoT-640x960.s5l8930x.img3 -t scab_template.img3
+rm -r shsh
+if [ ! -e "applelogoT-640x960.s5l8930x.img3" ]; then
+echo "failed get shsh!"
+exit
+fi
+fi
+
+cd ../../..
+zip -r0 ../../$1 Firmware/all_flash/all_flash.n90ap.production/manifest
+zip -r0 ../../$1 Firmware/all_flash/all_flash.n90ap.production/applelogo4-640x960.s5l8930x.img3
+zip -r0 ../../$1 Firmware/all_flash/all_flash.n90ap.production/applelogoT-640x960.s5l8930x.img3
+
+rm Firmware/all_flash/all_flash.n90ap.production/applelogo4-640x960.s5l8930x.img3
+rm Firmware/all_flash/all_flash.n90ap.production/applelogoT-640x960.s5l8930x.img3
+rm Firmware/all_flash/all_flash.n90ap.production/version.xml
+
+cd ../..
+
+echo "Fixed."

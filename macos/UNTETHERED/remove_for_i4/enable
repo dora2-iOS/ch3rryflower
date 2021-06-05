@@ -1,0 +1,35 @@
+#!/bin/bash
+
+echo "disable iBoot exploit for iPhone 4"
+echo "Put in device to dfu mode."
+read -p "<enter>: "
+
+../bin/partialZipBrowser -g Firmware/dfu/iBSS.n90ap.RELEASE.dfu http://appldnld.apple.com/iPhone4/041-1966.20110721.V3Ufe/iPhone3,1_4.3.5_8L1_Restore.ipsw
+
+if [ ! -e "iBSS.n90ap.RELEASE.dfu" ]; then
+echo "failed download ibss!"
+exit
+fi
+
+../bin/xpwntool iBSS.n90ap.RELEASE.dfu iBSS.n90ap.RELEASE.dec -iv 00ba61665022e97cacb71493f3e92533 -k 85d0388a2b1ce6b4fc68aebb3cb87014b6dd57fde5d9599381db4083a30c3803
+
+../bin/iBoot32Patcher iBSS.n90ap.RELEASE.dec pwnedibss --rsa --debug --setenv
+
+../bin/xpwntool pwnedibss pwnedibss.img3 -t iBSS.n90ap.RELEASE.dfu
+
+rm pwnedibss iBSS.n90ap.RELEASE.dfu iBSS.n90ap.RELEASE.dec
+
+./../pwnedDFU -p
+sleep 3s
+./../pwnedDFU -f pwnedibss.img3
+sleep 5s
+echo "Running command"
+./../irecovery -c 'setenv boot-partition 2'
+sleep 1s
+./../irecovery -c 'saveenv'
+sleep 1s
+./../irecovery -c 'reset'
+sleep 1s
+
+echo "Done"
+
